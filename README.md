@@ -1,4 +1,5 @@
 # Employee Tracker
+
  - A convenient CLI application for managing employee data including departments, roles, and employee details.
 
 ## Demo
