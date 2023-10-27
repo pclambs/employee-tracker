@@ -39,7 +39,7 @@ export const employee_tracker = () => {
 				inquirer.prompt([{
 					type: 'input',
 					name: 'department',
-					message: 'What is the name of the dpeartment?',
+					message: 'What is the name of the department?',
 					validate: departmentInput => {
 						if (departmentInput) {
 							return true;
@@ -117,54 +117,95 @@ export const employee_tracker = () => {
 				})
 			})
 		} else if (answers.prompt === 'Add An Employee') {
-			// get rols to present as choices
+			// get roles to present as choices
 			db.query(`SELECT * FROM role`, (err, result) => {
 				if (err) throw err
 
-				inquirer.prompt([
-					{
-						type: 'input',
-						name: 'first_name',
-						message: 'What is the employees first name?',
-						validate: input => !!input || 'Please enter a first name.'
-					},
-					{
-						type: 'input',
-						name: 'last_name',
-						message: 'What is the employees last name?',
-						validate: input => !!input || 'Please enter a last name.'
-					},
-					{
-						type: 'list',
-						name: 'role_id',
-						message: 'What is the employees role?',
-						choices: roles.map(role => ({
-							name: role.title,
-							value: role.id
-						}))
-					},
-					{
-						type: 'list',
-						name: 'manager_id',
-						message: 'Who is the employees manager?',
-						choices: employees.map(employee => ({
-							name: `${employee.first_name} ${employee.last_name}`,
-							value: employee.id
-						})).concat({ name: 'None', value: null })
-					}
-				]).then((answers) => {
-					db.query(`INSERT INTO employee (first_name, last_name, rold_id, manager_id) VALUES (?, ?, ?, ?)`, 
-						[answers.first_name, answers.last_name, answers.role_id, answers.manager_id], 
-						(err, result) => {
-							if (err) throw err
-							console.log(`Added ${answers.first_name} ${answers.last_name} to the database.`)
-							employee_tracker()
+				db.query(`SELECT * FROM employee`, (err, employees) => {
+					if (err) throw err;
+
+
+					inquirer.prompt([
+						{
+							type: 'input',
+							name: 'first_name',
+							message: 'What is the employees first name?',
+							validate: input => !!input || 'Please enter a first name.'
+						},
+						{
+							type: 'input',
+							name: 'last_name',
+							message: 'What is the employees last name?',
+							validate: input => !!input || 'Please enter a last name.'
+						},
+						{
+							type: 'list',
+							name: 'role_id',
+							message: 'What is the employees role?',
+							choices: result.map(role => ({
+								name: role.title,
+								value: role.id
+							}))
+						},
+						{
+							type: 'list',
+							name: 'manager_id',
+							message: 'Who is the employees manager?',
+							choices: employees.map(employee => ({
+								name: `${employee.first_name} ${employee.last_name}`,
+								value: employee.id
+							})).concat({ name: 'None', value: null })
 						}
-					)
+					]).then((answers) => {
+						db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`, 
+							[answers.first_name, answers.last_name, answers.role_id, answers.manager_id], 
+							(err, result) => {
+								if (err) throw err
+								console.log(`Added ${answers.first_name} ${answers.last_name} to the database.`)
+								employee_tracker()
+							}
+						)
+					})
 				})
 			})
 		} else if (answers.prompt === 'Update An Employee Role') {
+			db.query(`SELECT * FROM employee`, (err, employees) => {
+				if (err) throw err
 
+				db.query(`SELECT * FROM role`, (err, roles) => {
+					if (err) throw err
+
+					inquirer.prompt([
+							{
+								type: 'list',
+								name: 'employee_id',
+								message: 'Select an employee to update:',
+								choices: employees.map(employee => ({
+									name: `${employee.first_name} ${employee.last_name}`,
+									value: employee.id
+								}))
+							},
+							{
+								type: 'list',
+								name: 'role_id',
+								message: 'Select the new role for the employee:',
+								choices: roles.map(role => ({
+									name: role.title,
+									value: role.id
+								}))
+							}
+					]).then(answers => {
+						db.query(`UPDATE employee SET role_id = ? WHERE id = ?`,
+							[answers.role_id, answers.employee_id], 
+							(err, result) => {
+								if (err) throw err
+								console.log(`Employee's role has been updated.`)
+								employee_tracker()
+							}
+						)
+					})
+				})
+			})
 		} else if (answers.prompt === 'Log Out') {
 			db.end()
 			console.log("Peace!")
